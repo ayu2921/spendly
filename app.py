@@ -1,6 +1,15 @@
+import os
 from flask import Flask, render_template
+from database.db import init_db, seed_db
 
 app = Flask(__name__)
+
+app.config['DATABASE'] = os.path.join(app.instance_path, 'expense_tracker.db')
+os.makedirs(app.instance_path, exist_ok=True)
+
+with app.app_context():
+    init_db()
+    seed_db()
 
 
 # ------------------------------------------------------------------ #
