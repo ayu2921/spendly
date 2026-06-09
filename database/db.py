@@ -88,3 +88,10 @@ def create_user(name, email, password):
     )
     db.commit()
     return cursor.lastrowid
+
+
+def get_user_by_email(email):
+    db = get_db()
+    return db.execute(
+        'SELECT * FROM users WHERE email = ?', (email,)
+    ).fetchone()
