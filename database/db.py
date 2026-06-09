@@ -16,7 +16,6 @@ def get_db():
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA foreign_keys = ON')
         g.db = conn
-        current_app.teardown_appcontext(_close_db)
     return g.db
 
 
@@ -78,3 +77,14 @@ def seed_db():
         expenses
     )
     db.commit()
+
+
+def create_user(name, email, password):
+    db = get_db()
+    hashed = generate_password_hash(password)
+    cursor = db.execute(
+        'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
+        (name, email, hashed)
+    )
+    db.commit()
+    return cursor.lastrowid

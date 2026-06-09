@@ -1,11 +1,14 @@
 import os
-from flask import Flask, render_template
-from database.db import init_db, seed_db
+import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from database.db import init_db, seed_db, create_user, _close_db
 
 app = Flask(__name__)
 
 app.config['DATABASE'] = os.path.join(app.instance_path, 'expense_tracker.db')
+app.config['SECRET_KEY'] = 'spendly-dev-secret-do-not-use-in-production'
 os.makedirs(app.instance_path, exist_ok=True)
+app.teardown_appcontext(_close_db)
 
 with app.app_context():
     init_db()
@@ -21,9 +24,34 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    return render_template("register.html")
+    if request.method == "GET":
+        return render_template("register.html")
+
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not all([name, email, password, confirm_password]):
+        flash("All fields are required.", "error")
+        return render_template("register.html")
+    if len(password) < 8:
+        flash("Password must be at least 8 characters.", "error")
+        return render_template("register.html")
+    if password != confirm_password:
+        flash("Passwords do not match.", "error")
+        return render_template("register.html")
+
+    try:
+        create_user(name, email, password)
+    except sqlite3.IntegrityError:
+        flash("An account with that email already exists.", "error")
+        return render_template("register.html")
+
+    flash("Account created! Please sign in.", "success")
+    return redirect(url_for("login"))
 
 
 @app.route("/login")
